@@ -16,11 +16,12 @@ export function formatDate(value?: string | null) {
 
 export function formatDateTime(value?: string | null) {
   if (!value) return 'Sin fecha'
-  return new Intl.DateTimeFormat('es', {
+  return new Intl.DateTimeFormat('es-CO', {
     day: '2-digit',
     month: 'short',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
   }).format(new Date(value))
 }
 
