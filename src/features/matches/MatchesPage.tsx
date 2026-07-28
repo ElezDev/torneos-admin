@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import { type ColumnDef } from '@tanstack/react-table'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApiError, organizerApi } from '@/api'
 import { useAuth } from '@/auth/AuthProvider'
+import { DataTable } from '@/components/DataTable'
 import { FormDialog } from '@/components/FormDialog'
-import { EmptyState, Field, PageHeader } from '@/components/shared'
+import { SearchableSelect } from '@/components/SearchableSelect'
+import { Field, PageHeader } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -16,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatDateTime, getErrorMessage, statusLabels } from '@/lib/utils'
 import type { GameMatch, Team, Tournament, Venue } from '@/types/domain'
 
@@ -27,6 +29,7 @@ export function MatchesPage() {
   const [teams, setTeams] = useState<Team[]>([])
   const [venues, setVenues] = useState<Venue[]>([])
   const [matches, setMatches] = useState<GameMatch[]>([])
+  const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({
@@ -37,8 +40,14 @@ export function MatchesPage() {
     scheduledAt: '',
   })
 
+  const tournamentOptions = useMemo(
+    () => tournaments.map((tournament) => ({ value: String(tournament.id), label: tournament.name })),
+    [tournaments],
+  )
+
   useEffect(() => {
     if (!tenant?.id) return
+    setLoading(true)
     void Promise.all([organizerApi.tournaments.list(), organizerApi.venues.list()])
       .then(([t, v]) => {
         setTournaments(t.data)
@@ -46,22 +55,27 @@ export function MatchesPage() {
         if (t.data[0]) setTournamentId(String(t.data[0].id))
       })
       .catch((err) => toast.error(getErrorMessage(err, 'Error al cargar partidos')))
+      .finally(() => setLoading(false))
   }, [tenant?.id])
 
   useEffect(() => {
     if (!tournamentId) return
+    setLoading(true)
     void Promise.all([
       organizerApi.teams.list(tournamentId),
       organizerApi.matches.list(tournamentId),
-    ]).then(([teamList, matchList]) => {
-      setTeams(teamList.data)
-      setMatches(matchList.data)
-      setForm((f) => ({
-        ...f,
-        homeTeamId: teamList.data[0] ? String(teamList.data[0].id) : '',
-        awayTeamId: teamList.data[1] ? String(teamList.data[1].id) : '',
-      }))
-    })
+    ])
+      .then(([teamList, matchList]) => {
+        setTeams(teamList.data)
+        setMatches(matchList.data)
+        setForm((f) => ({
+          ...f,
+          homeTeamId: teamList.data[0] ? String(teamList.data[0].id) : '',
+          awayTeamId: teamList.data[1] ? String(teamList.data[1].id) : '',
+        }))
+      })
+      .catch((err) => toast.error(getErrorMessage(err)))
+      .finally(() => setLoading(false))
   }, [tournamentId])
 
   const canCreate = useMemo(
@@ -92,25 +106,64 @@ export function MatchesPage() {
     }
   }
 
+  const columns = useMemo<ColumnDef<GameMatch>[]>(
+    () => [
+      {
+        id: 'encuentro',
+        header: 'Encuentro',
+        accessorFn: (row) =>
+          `${row.homeTeam?.name ?? 'Local'} vs ${row.awayTeam?.name ?? 'Visitante'}`,
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.homeTeam?.name ?? 'Local'} vs {row.original.awayTeam?.name ?? 'Visitante'}
+          </span>
+        ),
+      },
+      {
+        id: 'fecha',
+        header: 'Fecha',
+        accessorFn: (row) => row.scheduledAt ?? '',
+        cell: ({ row }) => formatDateTime(row.original.scheduledAt),
+      },
+      {
+        id: 'sede',
+        header: 'Sede',
+        accessorFn: (row) => row.venue?.name ?? '',
+        cell: ({ row }) => row.original.venue?.name ?? '—',
+      },
+      {
+        accessorKey: 'matchday',
+        header: 'Jornada',
+        cell: ({ row }) => row.original.matchday ?? '—',
+      },
+      {
+        accessorKey: 'status',
+        header: 'Estado',
+        cell: ({ row }) => (
+          <Badge variant={row.original.status === 'finished' ? 'default' : 'secondary'}>
+            {statusLabels[row.original.status]}
+          </Badge>
+        ),
+      },
+    ],
+    [],
+  )
+
   return (
     <div>
       <PageHeader
         title="Partidos"
         description="Fixture del inquilino activo."
         actions={
-          <div className="flex items-center gap-2">
-            <Select value={tournamentId} onValueChange={setTournamentId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Torneo" />
-              </SelectTrigger>
-              <SelectContent>
-                {tournaments.map((tournament) => (
-                  <SelectItem key={tournament.id} value={String(tournament.id)}>
-                    {tournament.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <SearchableSelect
+              value={tournamentId || undefined}
+              onValueChange={setTournamentId}
+              options={tournamentOptions}
+              placeholder="Seleccionar torneo"
+              searchPlaceholder="Buscar torneo…"
+              className="h-9 w-full min-w-[280px] sm:w-[340px]"
+            />
             <Button
               size="sm"
               disabled={!canCreate}
@@ -125,46 +178,21 @@ export function MatchesPage() {
       />
 
       <Card>
-        {matches.length === 0 ? (
-          <div className="p-4">
-            <EmptyState
-              title="Sin partidos"
-              description={
-                canCreate
-                  ? 'Programá el primer encuentro con el botón Nuevo.'
-                  : 'Agregá al menos 2 equipos al torneo para poder crear partidos.'
-              }
-            />
-          </div>
+        {loading ? (
+          <p className="p-4 text-sm text-muted-foreground">Cargando…</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Encuentro</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Sede</TableHead>
-                <TableHead>Jornada</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {matches.map((match) => (
-                <TableRow key={match.id}>
-                  <TableCell className="font-medium">
-                    {match.homeTeam?.name ?? 'Local'} vs {match.awayTeam?.name ?? 'Visitante'}
-                  </TableCell>
-                  <TableCell>{formatDateTime(match.scheduledAt)}</TableCell>
-                  <TableCell>{match.venue?.name ?? '—'}</TableCell>
-                  <TableCell>{match.matchday ?? '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant={match.status === 'finished' ? 'default' : 'secondary'}>
-                      {statusLabels[match.status]}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={matches}
+            searchPlaceholder="Buscar encuentro, sede o jornada…"
+            searchKeys={['encuentro', 'sede', 'matchday', 'status']}
+            emptyMessage={
+              canCreate
+                ? 'Sin partidos. Programá el primero con Nuevo.'
+                : 'Agregá al menos 2 equipos al torneo para poder crear partidos.'
+            }
+            initialPageSize={10}
+          />
         )}
       </Card>
 
