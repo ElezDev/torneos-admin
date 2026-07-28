@@ -10,32 +10,56 @@ import {
 import { ApiError, authApi, setTenantId, setToken, unwrapItem } from '@/api'
 import type { Tenant, User } from '@/types/domain'
 
+export type Portal = 'organizer' | 'admin'
+
 type AuthState = {
   user: User | null
   tenant: Tenant | null
+  portal: Portal | null
   loading: boolean
+  isSuperAdmin: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (payload: {
-    name: string
-    email: string
-    password: string
-    passwordConfirmation: string
-    tenantName: string
-  }) => Promise<void>
+  loginAdmin: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   switchTenant: (tenant: Tenant) => void
+  enterOrganizerPortal: (tenant: Tenant) => void
   refreshUser: () => Promise<User | null>
   hasPermission: (permission: string) => boolean
 }
 
 const AuthContext = createContext<AuthState | null>(null)
 
-function pickTenant(user: User, preferredId?: number | null, preferred?: Tenant | null): Tenant | null {
-  if (preferred && user.tenants?.some((t) => t.id === preferred.id)) return preferred
-  if (preferredId != null) {
-    const found = user.tenants?.find((t) => t.id === preferredId)
-    if (found) return found
+function isSuperAdminUser(user: User | null): boolean {
+  return Boolean(user?.roles?.includes('super-admin'))
+}
+
+function readPortal(): Portal | null {
+  const value = localStorage.getItem('portal')
+  return value === 'admin' || value === 'organizer' ? value : null
+}
+
+function writePortal(portal: Portal | null) {
+  if (portal) localStorage.setItem('portal', portal)
+  else localStorage.removeItem('portal')
+}
+
+function readStoredTenant(): Tenant | null {
+  const raw = localStorage.getItem('activeTenant')
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as Tenant
+  } catch {
+    return null
   }
+}
+
+function persistTenant(tenant: Tenant | null) {
+  if (tenant) localStorage.setItem('activeTenant', JSON.stringify(tenant))
+  else localStorage.removeItem('activeTenant')
+}
+
+function pickOrganizerTenant(user: User, preferred?: Tenant | null): Tenant | null {
+  if (preferred) return preferred
   const stored = localStorage.getItem('tenantId')
   if (stored) {
     const found = user.tenants?.find((t) => String(t.id) === stored)
@@ -44,24 +68,44 @@ function pickTenant(user: User, preferredId?: number | null, preferred?: Tenant 
   return user.tenants?.[0] ?? null
 }
 
+function resolveTenant(user: User, portal: Portal | null, preferred?: Tenant | null): Tenant | null {
+  if (portal === 'admin') return null
+  if (isSuperAdminUser(user)) {
+    return preferred ?? readStoredTenant()
+  }
+  return pickOrganizerTenant(user, preferred)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [tenant, setTenant] = useState<Tenant | null>(null)
+  const [portal, setPortal] = useState<Portal | null>(readPortal())
   const [loading, setLoading] = useState(true)
 
-  const applyUser = useCallback((nextUser: User, preferred?: Tenant | null) => {
-    const current = pickTenant(nextUser, preferred?.id ?? null, preferred)
-    setUser(nextUser)
-    setTenant(current)
-    if (current) setTenantId(current.id)
-    else setTenantId(null)
-  }, [])
+  const applySession = useCallback(
+    (nextUser: User, nextPortal: Portal | null, preferredTenant?: Tenant | null) => {
+      const currentTenant = resolveTenant(nextUser, nextPortal, preferredTenant ?? null)
+      setUser(nextUser)
+      setPortal(nextPortal)
+      setTenant(currentTenant)
+      writePortal(nextPortal)
+      if (currentTenant) {
+        setTenantId(currentTenant.id)
+        persistTenant(currentTenant)
+        localStorage.setItem('lastOrgSlug', currentTenant.slug)
+      } else {
+        setTenantId(null)
+        persistTenant(null)
+      }
+    },
+    [],
+  )
 
   const refreshUser = useCallback(async () => {
     const me = unwrapItem(await authApi.me())
-    applyUser(me, tenant)
+    applySession(me, portal, tenant)
     return me
-  }, [applyUser, tenant])
+  }, [applySession, portal, tenant])
 
   const hydrate = useCallback(async () => {
     const token = localStorage.getItem('token')
@@ -72,40 +116,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const me = unwrapItem(await authApi.me())
-      applyUser(me)
+      applySession(me, readPortal())
     } catch {
       setToken(null)
       setTenantId(null)
       setUser(null)
       setTenant(null)
+      setPortal(null)
+      writePortal(null)
+      persistTenant(null)
     } finally {
       setLoading(false)
     }
-  }, [applyUser])
+  }, [applySession])
 
   useEffect(() => {
     void hydrate()
   }, [hydrate])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await authApi.login({ email, password })
-    setToken(res.token)
-    applyUser(res.user)
-  }, [applyUser])
-
-  const register = useCallback(
-    async (payload: {
-      name: string
-      email: string
-      password: string
-      passwordConfirmation: string
-      tenantName: string
-    }) => {
-      const res = await authApi.register(payload)
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const res = await authApi.login({ email, password })
+      if (isSuperAdminUser(res.user) && (res.user.tenants?.length ?? 0) === 0) {
+        throw new Error('Esta cuenta es de plataforma. Usá /admin/login.')
+      }
       setToken(res.token)
-      applyUser(res.user, res.tenant ?? null)
+      applySession(res.user, 'organizer', res.user.tenants?.[0] ?? null)
     },
-    [applyUser],
+    [applySession],
+  )
+
+  const loginAdmin = useCallback(
+    async (email: string, password: string) => {
+      const res = await authApi.login({ email, password })
+      if (!isSuperAdminUser(res.user)) {
+        throw new Error('No tenés acceso al panel de plataforma.')
+      }
+      setToken(res.token)
+      applySession(res.user, 'admin', null)
+    },
+    [applySession],
   )
 
   const logout = useCallback(async () => {
@@ -120,32 +170,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTenantId(null)
       setUser(null)
       setTenant(null)
+      setPortal(null)
+      writePortal(null)
+      persistTenant(null)
     }
   }, [])
 
   const switchTenant = useCallback((next: Tenant) => {
     setTenant(next)
     setTenantId(next.id)
+    persistTenant(next)
+    localStorage.setItem('lastOrgSlug', next.slug)
   }, [])
+
+  const enterOrganizerPortal = useCallback((next: Tenant) => {
+    setPortal('organizer')
+    writePortal('organizer')
+    switchTenant(next)
+  }, [switchTenant])
 
   const hasPermission = useCallback(
     (permission: string) => Boolean(user?.permissions?.includes(permission)),
     [user],
   )
 
+  const isSuperAdmin = isSuperAdminUser(user)
+
   const value = useMemo(
     () => ({
       user,
       tenant,
+      portal,
       loading,
+      isSuperAdmin,
       login,
-      register,
+      loginAdmin,
       logout,
       switchTenant,
+      enterOrganizerPortal,
       refreshUser,
       hasPermission,
     }),
-    [user, tenant, loading, login, register, logout, switchTenant, refreshUser, hasPermission],
+    [
+      user,
+      tenant,
+      portal,
+      loading,
+      isSuperAdmin,
+      login,
+      loginAdmin,
+      logout,
+      switchTenant,
+      enterOrganizerPortal,
+      refreshUser,
+      hasPermission,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

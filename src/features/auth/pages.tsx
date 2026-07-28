@@ -1,19 +1,98 @@
 import { type FormEvent, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApiError } from '@/api'
 import { useAuth } from '@/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getErrorMessage } from '@/lib/utils'
 
+const HERO = '/auth/hero.svg'
+
+export function AdminLoginPage() {
+  const { loginAdmin } = useAuth()
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    setSubmitting(true)
+    try {
+      await loginAdmin(email, password)
+      toast.success('Sesión iniciada')
+      navigate('/admin')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <AuthScreen
+      tone="admin"
+      brand="Matchday"
+      brandHint="Plataforma"
+      headline="Panel de control"
+      support="Administrá organizaciones, accesos y el estado global del sistema."
+    >
+      <form className="space-y-5" onSubmit={onSubmit}>
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold text-[#10231b]">
+            <Shield className="size-4 text-[#1f7a4d]" />
+            Super admin
+          </p>
+          <p className="mt-1 text-sm text-[#5d7368]">Acceso exclusivo a la plataforma.</p>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="admin-email" className="text-[#2d4339]">
+            Email
+          </Label>
+          <Input
+            id="admin-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="username"
+            className="h-11 border-[#d5e2db] bg-white/90"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="admin-password" className="text-[#2d4339]">
+            Contraseña
+          </Label>
+          <Input
+            id="admin-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            className="h-11 border-[#d5e2db] bg-white/90"
+          />
+        </div>
+        <Button
+          type="submit"
+          className="h-11 w-full bg-[#16382b] text-base text-white hover:bg-[#0f2a20]"
+          disabled={submitting}
+        >
+          {submitting ? 'Entrando…' : 'Entrar'}
+        </Button>
+      </form>
+    </AuthScreen>
+  )
+}
+
 export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('org@torneos.test')
-  const [password, setPassword] = useState('password123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   async function onSubmit(event: FormEvent) {
@@ -31,178 +110,114 @@ export function LoginPage() {
   }
 
   return (
-    <AuthFrame title="Panel de organización" subtitle="Gestioná torneos, equipos y partidos.">
-      <Card className="w-full max-w-sm shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Iniciar sesión</CardTitle>
-          <CardDescription>Usá tu cuenta de organizador.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-3" onSubmit={onSubmit}>
-            <div className="grid gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? 'Entrando…' : 'Entrar'}
-            </Button>
-            <p className="rounded-md bg-muted px-2.5 py-2 text-center text-[11px] leading-relaxed text-muted-foreground">
-              Demo: <span className="font-medium text-foreground">org@torneos.test</span> /{' '}
-              <span className="font-medium text-foreground">password123</span>
-              <br />
-              Abrí el panel en <span className="font-medium text-foreground">http://localhost:5173</span>
-            </p>
-            <p className="text-center text-xs text-muted-foreground">
-              ¿No tenés cuenta?{' '}
-              <Link className="font-medium text-primary hover:underline" to="/register">
-                Crear organización
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </AuthFrame>
+    <AuthScreen
+      tone="organizer"
+      brand="Matchday"
+      brandHint="Ligas y clubes"
+      headline="Tu torneo, en orden"
+      support="Entrá para gestionar fixture, planillas, tabla y resultados de tu organización."
+    >
+      <form className="space-y-5" onSubmit={onSubmit}>
+        <div>
+          <p className="auth-brand text-3xl leading-none text-[#10231b]">Iniciar sesión</p>
+          <p className="mt-2 text-sm text-[#5d7368]">
+            Usá el email y contraseña de tu organización.
+          </p>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="email" className="text-[#2d4339]">
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            className="h-11 border-[#d5e2db] bg-white/90"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="password" className="text-[#2d4339]">
+            Contraseña
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            className="h-11 border-[#d5e2db] bg-white/90"
+          />
+        </div>
+        <Button
+          type="submit"
+          className="h-11 w-full bg-[#1f7a4d] text-base text-white hover:bg-[#17663f]"
+          disabled={submitting}
+        >
+          {submitting ? 'Entrando…' : 'Entrar al panel'}
+        </Button>
+      </form>
+    </AuthScreen>
   )
 }
 
-export function RegisterPage() {
-  const { register } = useAuth()
-  const navigate = useNavigate()
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    passwordConfirmation: '',
-    tenantName: '',
-  })
-  const [submitting, setSubmitting] = useState(false)
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault()
-    setSubmitting(true)
-    try {
-      await register(form)
-      toast.success('Cuenta creada')
-      navigate('/app')
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <AuthFrame title="Creá tu organización" subtitle="Empezá a gestionar torneos en minutos.">
-      <Card className="w-full max-w-sm shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Registro</CardTitle>
-          <CardDescription>Tu cuenta + tu club/liga.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-3" onSubmit={onSubmit}>
-            <div className="grid gap-1.5">
-              <Label>Tu nombre</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Organización</Label>
-              <Input
-                value={form.tenantName}
-                onChange={(e) => setForm((f) => ({ ...f, tenantName: e.target.value }))}
-                required
-                placeholder="Liga Barrial Norte"
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="grid gap-1.5">
-                <Label>Contraseña</Label>
-                <Input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  required
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Confirmar</Label>
-                <Input
-                  type="password"
-                  value={form.passwordConfirmation}
-                  onChange={(e) => setForm((f) => ({ ...f, passwordConfirmation: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? 'Creando…' : 'Crear cuenta'}
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-              ¿Ya tenés cuenta?{' '}
-              <Link className="font-medium text-primary hover:underline" to="/login">
-                Iniciar sesión
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </AuthFrame>
-  )
-}
-
-function AuthFrame({
-  title,
-  subtitle,
+function AuthScreen({
+  brand,
+  brandHint,
+  headline,
+  support,
+  tone,
   children,
 }: {
-  title: string
-  subtitle: string
+  brand: string
+  brandHint: string
+  headline: string
+  support: string
+  tone: 'organizer' | 'admin'
   children: ReactNode
 }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1fr_420px]">
-      <section className="relative hidden overflow-hidden bg-foreground px-8 py-8 text-background lg:flex lg:flex-col lg:justify-between">
-        <div>
-          <p className="text-lg font-semibold">TorneosApp</p>
-          <p className="mt-1 text-xs text-background/60">Ligas amateur</p>
-        </div>
-        <div className="max-w-md">
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-2 text-sm text-background/70">{subtitle}</p>
-        </div>
-        <p className="text-xs text-background/45">Fixture · Planillas · Tabla · Stats</p>
-      </section>
-      <section className="flex items-center justify-center bg-background p-4">{children}</section>
+    <div className="auth-screen relative min-h-screen overflow-hidden">
+      <div className="absolute inset-0">
+        <img src={HERO} alt="" className="auth-hero-media absolute inset-0 size-full object-cover" />
+        <div
+          className={`auth-wash absolute inset-0 ${
+            tone === 'admin'
+              ? 'bg-gradient-to-br from-[#071912]/80 via-[#0d2a1f]/55 to-[#16382b]/35'
+              : 'bg-gradient-to-br from-[#071912]/70 via-[#0f3a28]/45 to-transparent'
+          }`}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.16),transparent_42%)]" />
+      </div>
+
+      <div className="relative z-10 grid min-h-screen lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="auth-copy flex flex-col justify-between px-8 py-10 text-white sm:px-12 lg:px-16 lg:py-14">
+          <div>
+            <p className="auth-brand text-5xl leading-none sm:text-6xl lg:text-7xl">{brand}</p>
+            <p className="mt-2 text-sm font-medium tracking-wide text-white/75">{brandHint}</p>
+          </div>
+
+          <div className="mt-16 max-w-xl lg:mt-0">
+            <h1 className="auth-brand text-4xl leading-[0.95] sm:text-5xl lg:text-6xl">{headline}</h1>
+            <p className="mt-4 max-w-md text-base leading-relaxed text-white/80 sm:text-lg">
+              {support}
+            </p>
+          </div>
+
+          <p className="mt-16 text-xs tracking-[0.18em] uppercase text-white/55 lg:mt-0">
+            Fixture · Planillas · Tabla · Galería
+          </p>
+        </section>
+
+        <section className="flex items-end justify-center p-4 pb-8 sm:items-center sm:p-8 lg:justify-end lg:pr-16">
+          <div className="auth-panel w-full max-w-[400px] rounded-2xl border border-white/50 bg-[#f4f7f3]/92 p-6 shadow-[0_24px_60px_-28px_rgba(7,25,18,0.55)] backdrop-blur-md sm:p-8">
+            {children}
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

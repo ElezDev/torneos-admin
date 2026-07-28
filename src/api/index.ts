@@ -8,12 +8,14 @@ import type {
   Standing,
   Team,
   Tenant,
+  TenantBranding,
   Tournament,
   TournamentGroup,
+  TournamentPost,
   User,
   Venue,
 } from '@/types/domain'
-import { ApiError, api, getTenantId, setTenantId, setToken } from '@/api/client'
+import { ApiError, api, getTenantId, setTenantId, setToken, uploadMultipart } from '@/api/client'
 
 export { ApiError, getTenantId, setTenantId, setToken }
 
@@ -71,19 +73,6 @@ export type FixtureGenerateResult = {
 }
 
 export const authApi = {
-  register: (payload: {
-    name: string
-    email: string
-    password: string
-    passwordConfirmation: string
-    tenantName: string
-  }) =>
-    api<AuthResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      skipAuth: true,
-    }),
-
   login: (payload: { email: string; password: string }) =>
     api<AuthResponse>('/auth/login', {
       method: 'POST',
@@ -98,15 +87,60 @@ export const authApi = {
 
 export const catalogApi = {
   sports: () => api<ApiList<Sport>>('/sports', { skipAuth: true }),
+  tenantBranding: (slug: string) =>
+    api<ApiItem<TenantBranding>>(`/public/tenants/${slug}/branding`, { skipAuth: true }),
 }
 
 export const tenantsApi = {
   list: () => api<ApiList<Tenant>>('/tenants'),
-  create: (payload: Record<string, unknown>) =>
-    api<ApiItem<Tenant>>('/tenants', { method: 'POST', body: JSON.stringify(payload) }),
   update: (id: number | string, payload: Record<string, unknown>) =>
     api<ApiItem<Tenant>>(`/tenants/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   get: (id: number | string) => api<ApiItem<Tenant>>(`/tenants/${id}`),
+  uploadLogo: (id: number | string, file: File) => {
+    const form = new FormData()
+    form.append('image', file)
+    return uploadMultipart<ApiItem<Tenant>>(`/tenants/${id}/branding/logo`, form)
+  },
+  uploadLoginImage: (id: number | string, file: File) => {
+    const form = new FormData()
+    form.append('image', file)
+    return uploadMultipart<ApiItem<Tenant>>(`/tenants/${id}/branding/login-image`, form)
+  },
+  deleteLogo: (id: number | string) =>
+    api<ApiItem<Tenant>>(`/tenants/${id}/branding/logo`, { method: 'DELETE' }),
+  deleteLoginImage: (id: number | string) =>
+    api<ApiItem<Tenant>>(`/tenants/${id}/branding/login-image`, { method: 'DELETE' }),
+}
+
+export const adminApi = {
+  overview: () =>
+    api<{
+      data: {
+        summary: {
+          tenantsCount: number
+          activeTenants: number
+          tournamentsCount: number
+          usersCount: number
+        }
+        tenants: Tenant[]
+      }
+    }>('/admin/overview'),
+  tenants: {
+    list: () => api<ApiList<Tenant>>('/admin/tenants'),
+    create: (payload: {
+      name: string
+      slug?: string | null
+      ownerName: string
+      ownerEmail: string
+      ownerPassword: string
+    }) =>
+      api<ApiItem<Tenant>>('/admin/tenants', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    update: (id: number | string, payload: Record<string, unknown>) =>
+      api<ApiItem<Tenant>>(`/admin/tenants/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  },
 }
 
 export const organizerApi = {
@@ -144,6 +178,29 @@ export const organizerApi = {
         }),
       remove: (tournamentId: number | string, groupId: number | string) =>
         api(`/tournaments/${tournamentId}/groups/${groupId}`, { method: 'DELETE' }),
+    },
+    uploadBanner: (id: number | string, file: File) => {
+      const form = new FormData()
+      form.append('image', file)
+      return uploadMultipart<ApiItem<Tournament>>(`/tournaments/${id}/banner`, form)
+    },
+    deleteBanner: (id: number | string) =>
+      api<ApiItem<Tournament>>(`/tournaments/${id}/banner`, { method: 'DELETE' }),
+    posts: {
+      list: (tournamentId: number | string) =>
+        api<ApiList<TournamentPost>>(`/tournaments/${tournamentId}/posts`),
+      create: (
+        tournamentId: number | string,
+        payload: { caption?: string; matchId?: number | null; image?: File | null },
+      ) => {
+        const form = new FormData()
+        if (payload.caption) form.append('caption', payload.caption)
+        if (payload.matchId) form.append('matchId', String(payload.matchId))
+        if (payload.image) form.append('image', payload.image)
+        return uploadMultipart<ApiItem<TournamentPost>>(`/tournaments/${tournamentId}/posts`, form)
+      },
+      remove: (tournamentId: number | string, postId: number | string) =>
+        api(`/tournaments/${tournamentId}/posts/${postId}`, { method: 'DELETE' }),
     },
   },
   venues: {
@@ -187,6 +244,13 @@ export const organizerApi = {
     update: (id: number | string, payload: Record<string, unknown>) =>
       api<ApiItem<GameMatch>>(`/matches/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
     remove: (id: number | string) => api(`/matches/${id}`, { method: 'DELETE' }),
+    uploadBanner: (id: number | string, file: File) => {
+      const form = new FormData()
+      form.append('image', file)
+      return uploadMultipart<ApiItem<GameMatch>>(`/matches/${id}/banner`, form)
+    },
+    deleteBanner: (id: number | string) =>
+      api<ApiItem<GameMatch>>(`/matches/${id}/banner`, { method: 'DELETE' }),
     planilla: {
       get: (matchId: number | string) =>
         api<{

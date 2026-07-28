@@ -6,9 +6,10 @@ import {
   LogOut,
   MapPin,
   Menu,
+  Shield,
   Trophy,
 } from 'lucide-react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
@@ -108,37 +109,72 @@ function BadgeDot() {
 }
 
 export function AppShell() {
-  const { user, tenant, logout } = useAuth()
+  const { user, tenant, logout, isSuperAdmin } = useAuth()
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r bg-sidebar px-3 py-3 lg:flex">
-        <div className="px-2 py-1">
-          <p className="text-sm font-semibold tracking-tight">TorneosApp</p>
-          <p className="text-[11px] text-muted-foreground">Panel de organización</p>
-        </div>
-        <div className="mt-3">
-          <TenantSwitcher />
-        </div>
-        <Separator className="my-3" />
-        <div className="flex-1">
-          <NavItems />
-        </div>
-        <Separator className="my-3" />
-        <div className="space-y-2 px-1">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{user?.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r bg-sidebar lg:flex">
+        {tenant?.loginImageUrl ? (
+          <div className="relative h-24 shrink-0 overflow-hidden border-b">
+            <img src={tenant.loginImageUrl} alt="" className="size-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-sidebar via-sidebar/20 to-transparent" />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start gap-2"
-            onClick={() => void logout()}
-          >
-            <LogOut className="size-3.5" />
-            Cerrar sesión
-          </Button>
+        ) : null}
+        <div className="flex flex-1 flex-col px-3 py-3">
+          <div className="px-2 py-1">
+            <p className="text-sm font-semibold tracking-tight">Matchday</p>
+            <p className="text-[11px] text-muted-foreground">Panel de organización</p>
+          </div>
+          {tenant ? (
+            <div className="mt-2 flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
+              {tenant.logoUrl ? (
+                <img
+                  src={tenant.logoUrl}
+                  alt={tenant.name}
+                  className="size-8 shrink-0 rounded-md border object-cover"
+                />
+              ) : (
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-xs font-semibold">
+                  {tenant.name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-[10px] text-muted-foreground">Organización activa</p>
+                <p className="truncate text-xs font-medium">{tenant.name}</p>
+              </div>
+            </div>
+          ) : null}
+          <div className="mt-3">
+            <TenantSwitcher />
+          </div>
+          <Separator className="my-3" />
+          {isSuperAdmin ? (
+            <Button variant="outline" size="sm" className="mb-3 w-full justify-start gap-2" asChild>
+              <Link to="/admin">
+                <Shield className="size-3.5" />
+                Volver a plataforma
+              </Link>
+            </Button>
+          ) : null}
+          <div className="flex-1">
+            <NavItems />
+          </div>
+          <Separator className="my-3" />
+          <div className="space-y-2 px-1">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{user?.name}</p>
+              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={() => void logout()}
+            >
+              <LogOut className="size-3.5" />
+              Cerrar sesión
+            </Button>
+          </div>
         </div>
       </aside>
 
@@ -152,7 +188,7 @@ export function AppShell() {
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-3">
               <SheetHeader className="px-2 text-left">
-                <SheetTitle>TorneosApp</SheetTitle>
+                <SheetTitle>Matchday</SheetTitle>
               </SheetHeader>
               <div className="mt-3 space-y-3">
                 <TenantSwitcher />
@@ -161,7 +197,7 @@ export function AppShell() {
             </SheetContent>
           </Sheet>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">TorneosApp</p>
+            <p className="truncate text-sm font-semibold">Matchday</p>
             <p className="truncate text-[11px] text-muted-foreground">{tenant?.name}</p>
           </div>
           <Button variant="ghost" size="sm" onClick={() => void logout()}>

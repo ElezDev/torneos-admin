@@ -73,3 +73,39 @@ export async function api<T = unknown>(path: string, options: ApiOptions = {}): 
 
   return body as T
 }
+
+export async function uploadMultipart<T = unknown>(
+  path: string,
+  formData: FormData,
+  options: ApiOptions = {},
+): Promise<T> {
+  const headers = new Headers(options.headers ?? {})
+  headers.set('Accept', 'application/json')
+
+  if (!options.skipAuth) {
+    const token = getToken()
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const tenantId = options.tenantId ?? getTenantId()
+  if (tenantId != null) headers.set('X-Tenant-Id', String(tenantId))
+
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    method: options.method ?? 'POST',
+    headers,
+    body: formData,
+  })
+
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  const body = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new ApiError(response.status, body)
+  }
+
+  return body as T
+}

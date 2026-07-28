@@ -4,6 +4,30 @@ export type Tenant = {
   slug: string
   isActive: boolean
   isOwner?: boolean
+  logoUrl?: string | null
+  loginImageUrl?: string | null
+  tournamentsCount?: number
+  usersCount?: number
+  owner?: { id: number; name: string; email: string } | null
+}
+
+export type TenantBranding = {
+  name: string
+  slug: string
+  logoUrl: string | null
+  loginImageUrl: string | null
+}
+
+export type TournamentPost = {
+  id: number
+  tournamentId: number
+  matchId: number | null
+  userId: number
+  caption: string | null
+  imageUrl: string | null
+  user?: { id: number; name: string }
+  match?: GameMatch | null
+  createdAt: string
 }
 
 export type User = {
@@ -43,6 +67,7 @@ export type Tournament = {
   startsOn: string | null
   endsOn: string | null
   isPublic: boolean
+  bannerUrl?: string | null
   pointsConfig: Record<string, number>
   sanctionRules: Record<string, unknown>
   tiebreakerRules: string[]
@@ -111,6 +136,7 @@ export type GameMatch = {
   winnerTeamId: number | null
   notes: string | null
   refereeName?: string | null
+  bannerUrl?: string | null
   homePlaceholder?: string | null
   awayPlaceholder?: string | null
   homeTeam?: Team | null

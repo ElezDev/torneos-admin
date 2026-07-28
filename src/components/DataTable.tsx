@@ -112,7 +112,7 @@ export function DataTable<TData>({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 px-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 px-5 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative min-w-0 flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -211,7 +211,7 @@ export function DataTable<TData>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between px-3 pb-3 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between px-5 pb-4 pt-1 text-xs text-muted-foreground">
         <span>
           {table.getFilteredRowModel().rows.length} de {data.length}
         </span>

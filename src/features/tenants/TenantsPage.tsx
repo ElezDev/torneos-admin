@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Building2, Pencil, Plus } from 'lucide-react'
+import { Building2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApiError, tenantsApi } from '@/api'
 import { useAuth } from '@/auth/AuthProvider'
 import { FormDialog } from '@/components/FormDialog'
+import { ImageUploadField } from '@/components/ImageUploadField'
 import { EmptyState, Field, PageHeader } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,10 +18,12 @@ export function TenantsPage() {
   const { tenant, switchTenant, refreshUser } = useAuth()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
-  const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [brandingOpen, setBrandingOpen] = useState(false)
   const [editing, setEditing] = useState<Tenant | null>(null)
+  const [branding, setBranding] = useState<Tenant | null>(null)
   const [busy, setBusy] = useState(false)
+  const [brandingBusy, setBrandingBusy] = useState<'logo' | 'login' | null>(null)
   const [form, setForm] = useState({ name: '', slug: '' })
 
   async function load() {
@@ -44,34 +47,15 @@ export function TenantsPage() {
     }
   }, [])
 
-  function openCreate() {
-    setForm({ name: '', slug: '' })
-    setCreateOpen(true)
-  }
-
   function openEdit(item: Tenant) {
     setEditing(item)
     setForm({ name: item.name, slug: item.slug })
     setEditOpen(true)
   }
 
-  async function createTenant() {
-    setBusy(true)
-    try {
-      const res = await tenantsApi.create({
-        name: form.name,
-        slug: form.slug || null,
-      })
-      toast.success('Inquilino creado')
-      setCreateOpen(false)
-      await refreshUser()
-      await load()
-      switchTenant(res.data)
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
-    } finally {
-      setBusy(false)
-    }
+  function openBranding(item: Tenant) {
+    setBranding(item)
+    setBrandingOpen(true)
   }
 
   async function updateTenant() {
@@ -82,7 +66,7 @@ export function TenantsPage() {
         name: form.name,
         slug: form.slug || null,
       })
-      toast.success('Inquilino actualizado')
+      toast.success('Organización actualizada')
       setEditOpen(false)
       await refreshUser()
       await load()
@@ -96,14 +80,8 @@ export function TenantsPage() {
   return (
     <div>
       <PageHeader
-        title="Inquilinos"
-        description="Organizaciones dueñas de torneos, equipos y sedes. Cambiá el activo para operar en su contexto."
-        actions={
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="size-4" />
-            Nuevo inquilino
-          </Button>
-        }
+        title="Mi organización"
+        description="Datos y marca de tu organización. Las altas nuevas las hace el administrador de la plataforma."
       />
 
       <Card>
@@ -112,13 +90,8 @@ export function TenantsPage() {
         ) : tenants.length === 0 ? (
           <div className="p-4">
             <EmptyState
-              title="Sin inquilinos"
-              description="Creá una organización para empezar a gestionar torneos."
-              action={
-                <Button size="sm" onClick={openCreate}>
-                  Crear inquilino
-                </Button>
-              }
+              title="Sin organización asignada"
+              description="Pedile al administrador de Matchday que cree tu organización y usuario."
             />
           </div>
         ) : (
@@ -159,9 +132,14 @@ export function TenantsPage() {
                           </Button>
                         ) : null}
                         {item.isOwner ? (
-                          <Button size="icon-sm" variant="ghost" onClick={() => openEdit(item)}>
-                            <Pencil className="size-3.5" />
-                          </Button>
+                          <>
+                            <Button size="icon-sm" variant="ghost" onClick={() => openBranding(item)}>
+                              <Building2 className="size-3.5" />
+                            </Button>
+                            <Button size="icon-sm" variant="ghost" onClick={() => openEdit(item)}>
+                              <Pencil className="size-3.5" />
+                            </Button>
+                          </>
                         ) : null}
                       </div>
                     </TableCell>
@@ -174,35 +152,9 @@ export function TenantsPage() {
       </Card>
 
       <FormDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="Nuevo inquilino"
-        description="Va a ser dueño de sus propios torneos y datos."
-        submitting={busy}
-        submitLabel="Crear"
-        onSubmit={createTenant}
-      >
-        <Field label="Nombre de la organización">
-          <Input
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            required
-            placeholder="Club Demo / Liga Norte"
-          />
-        </Field>
-        <Field label="Slug (opcional)">
-          <Input
-            value={form.slug}
-            onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-            placeholder="club-demo"
-          />
-        </Field>
-      </FormDialog>
-
-      <FormDialog
         open={editOpen}
         onOpenChange={setEditOpen}
-        title="Editar inquilino"
+        title="Editar organización"
         submitting={busy}
         submitLabel="Guardar"
         onSubmit={updateTenant}
@@ -220,6 +172,88 @@ export function TenantsPage() {
             onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
           />
         </Field>
+      </FormDialog>
+
+      <FormDialog
+        open={brandingOpen}
+        onOpenChange={setBrandingOpen}
+        title="Marca de la organización"
+        description="Logo e imagen de portada que se ven dentro del panel."
+        submitting={brandingBusy != null}
+        submitLabel="Cerrar"
+        onSubmit={() => setBrandingOpen(false)}
+      >
+        {branding ? (
+          <div className="space-y-4">
+            <ImageUploadField
+              label="Logo"
+              hint="Se muestra en el panel cuando operás con esta organización."
+              currentUrl={branding.logoUrl}
+              aspect="square"
+              busy={brandingBusy === 'logo'}
+              onUpload={async (file) => {
+                setBrandingBusy('logo')
+                try {
+                  const res = await tenantsApi.uploadLogo(branding.id, file)
+                  setBranding(res.data)
+                  await refreshUser()
+                  await load()
+                  toast.success('Logo actualizado')
+                } catch (err) {
+                  toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
+                } finally {
+                  setBrandingBusy(null)
+                }
+              }}
+              onRemove={async () => {
+                setBrandingBusy('logo')
+                try {
+                  const res = await tenantsApi.deleteLogo(branding.id)
+                  setBranding(res.data)
+                  await refreshUser()
+                  await load()
+                  toast.success('Logo eliminado')
+                } catch (err) {
+                  toast.error(getErrorMessage(err))
+                } finally {
+                  setBrandingBusy(null)
+                }
+              }}
+            />
+            <ImageUploadField
+              label="Imagen de portada"
+              hint="Banner decorativo en la barra lateral del panel."
+              currentUrl={branding.loginImageUrl}
+              aspect="portrait"
+              busy={brandingBusy === 'login'}
+              onUpload={async (file) => {
+                setBrandingBusy('login')
+                try {
+                  const res = await tenantsApi.uploadLoginImage(branding.id, file)
+                  setBranding(res.data)
+                  await refreshUser()
+                  toast.success('Imagen de portada actualizada')
+                } catch (err) {
+                  toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
+                } finally {
+                  setBrandingBusy(null)
+                }
+              }}
+              onRemove={async () => {
+                setBrandingBusy('login')
+                try {
+                  const res = await tenantsApi.deleteLoginImage(branding.id)
+                  setBranding(res.data)
+                  toast.success('Imagen de portada eliminada')
+                } catch (err) {
+                  toast.error(getErrorMessage(err))
+                } finally {
+                  setBrandingBusy(null)
+                }
+              }}
+            />
+          </div>
+        ) : null}
       </FormDialog>
     </div>
   )

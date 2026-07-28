@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { ApiError, organizerApi } from '@/api'
+import { ImageUploadField } from '@/components/ImageUploadField'
 import { Field } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,6 +35,8 @@ type Props = {
 
 export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }: Props) {
   const [busy, setBusy] = useState(false)
+  const [bannerBusy, setBannerBusy] = useState(false)
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null)
   const [planillaOpen, setPlanillaOpen] = useState(false)
   const [form, setForm] = useState({
     homeScore: '',
@@ -54,6 +57,7 @@ export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }
       scheduledAt: match.scheduledAt ? match.scheduledAt.slice(0, 16) : '',
       notes: match.notes ?? '',
     })
+    setBannerUrl(match.bannerUrl ?? null)
   }, [match])
 
   async function save(finish = false) {
@@ -100,6 +104,42 @@ export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }
         </DialogHeader>
 
         <div className="grid gap-3 py-1">
+          <ImageUploadField
+            label="Foto del partido"
+            hint="Banner o foto destacada de este encuentro."
+            currentUrl={bannerUrl}
+            aspect="banner"
+            busy={bannerBusy}
+            onUpload={async (file) => {
+              if (!match) return
+              setBannerBusy(true)
+              try {
+                const res = await organizerApi.matches.uploadBanner(match.id, file)
+                setBannerUrl(res.data.bannerUrl ?? null)
+                toast.success('Foto del partido actualizada')
+                await onSaved()
+              } catch (err) {
+                toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
+              } finally {
+                setBannerBusy(false)
+              }
+            }}
+            onRemove={async () => {
+              if (!match) return
+              setBannerBusy(true)
+              try {
+                await organizerApi.matches.deleteBanner(match.id)
+                setBannerUrl(null)
+                toast.success('Foto eliminada')
+                await onSaved()
+              } catch (err) {
+                toast.error(getErrorMessage(err))
+              } finally {
+                setBannerBusy(false)
+              }
+            }}
+          />
+
           <div className="grid grid-cols-2 gap-3">
                 <Field label={`Goles ${match.homeTeam?.shortName ?? match.homeTeam?.name ?? match.homePlaceholder ?? 'Local'}`}>
                   <Input

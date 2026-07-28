@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 import { MatchManageDialog } from '@/features/tournaments/MatchManageDialog'
 import { BracketView } from '@/features/tournaments/BracketView'
+import { TournamentGalleryPanel } from '@/features/tournaments/TournamentGalleryPanel'
 import { formatDate, formatDateTime, formatLabels, getErrorMessage, statusLabels } from '@/lib/utils'
 import type { GameMatch, Player, Sport, Team, Tournament, TournamentGroup, Venue } from '@/types/domain'
 
@@ -856,9 +857,20 @@ export function TournamentDetailPage() {
         }
       />
 
+      {tournament.bannerUrl ? (
+        <div className="mb-4 overflow-hidden rounded-xl border">
+          <img
+            src={tournament.bannerUrl}
+            alt={`Banner ${tournament.name}`}
+            className="aspect-[21/9] w-full object-cover"
+          />
+        </div>
+      ) : null}
+
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Resumen</TabsTrigger>
+          <TabsTrigger value="gallery">Galería</TabsTrigger>
           <TabsTrigger value="bracket">Bracket</TabsTrigger>
           <TabsTrigger value="standings">Tabla</TabsTrigger>
           <TabsTrigger value="stats">Estadísticas</TabsTrigger>
@@ -937,6 +949,14 @@ export function TournamentDetailPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="gallery" className="mt-3">
+          <TournamentGalleryPanel
+            tournament={tournament}
+            matches={matches}
+            onTournamentChange={setTournament}
+          />
         </TabsContent>
 
         <TabsContent value="bracket" className="mt-3">
