@@ -6,6 +6,7 @@ import { ApiError, organizerApi } from '@/api'
 import { useAuth } from '@/auth/AuthProvider'
 import { DataTable } from '@/components/DataTable'
 import { FormDialog } from '@/components/FormDialog'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Field, PageHeader } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -36,6 +37,8 @@ export function VenuesPage() {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState<Venue | null>(null)
+  const [deleting, setDeleting] = useState<Venue | null>(null)
+  const [deletingBusy, setDeletingBusy] = useState(false)
   const [form, setForm] = useState<VenueForm>(emptyForm)
 
   const cities = useMemo(() => citiesForDepartment(form.department), [form.department])
@@ -126,14 +129,18 @@ export function VenuesPage() {
     }
   }
 
-  async function onDelete(venue: Venue) {
-    if (!confirm(`¿Eliminar la sede “${venue.name}”?`)) return
+  async function onDelete() {
+    if (!deleting) return
+    setDeletingBusy(true)
     try {
-      await organizerApi.venues.remove(venue.id)
+      await organizerApi.venues.remove(deleting.id)
       toast.success('Sede eliminada')
+      setDeleting(null)
       await load()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
+    } finally {
+      setDeletingBusy(false)
     }
   }
 
@@ -174,7 +181,7 @@ export function VenuesPage() {
               type="button"
               variant="ghost"
               size="icon-sm"
-              onClick={() => void onDelete(row.original)}
+              onClick={() => setDeleting(row.original)}
               title="Eliminar"
             >
               <Trash2 className="size-3.5 text-destructive" />
@@ -278,6 +285,22 @@ export function VenuesPage() {
           />
         </Field>
       </FormDialog>
+
+      <ConfirmDialog
+        open={deleting != null}
+        onOpenChange={(next) => {
+          if (!next && !deletingBusy) setDeleting(null)
+        }}
+        title="Eliminar sede"
+        description={
+          deleting
+            ? `¿Seguro que querés eliminar “${deleting.name}”? Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmLabel="Eliminar"
+        confirming={deletingBusy}
+        onConfirm={onDelete}
+      />
     </div>
   )
 }
