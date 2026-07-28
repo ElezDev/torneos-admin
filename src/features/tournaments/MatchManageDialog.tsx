@@ -23,17 +23,20 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { PlanillaDialog } from '@/features/tournaments/PlanillaDialog'
 import { formatDateTime, getErrorMessage, statusLabels } from '@/lib/utils'
-import type { GameMatch, Venue } from '@/types/domain'
+import type { GameMatch, Sport, Venue } from '@/types/domain'
+import { sportLabels } from '@/lib/sport-labels'
 
 type Props = {
   match: GameMatch | null
   venues: Venue[]
+  sport?: Pick<Sport, 'code' | 'scoringLabel' | 'name'> | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => Promise<void> | void
 }
 
-export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }: Props) {
+export function MatchManageDialog({ match, venues, sport, open, onOpenChange, onSaved }: Props) {
+  const labels = sportLabels(sport)
   const [busy, setBusy] = useState(false)
   const [bannerBusy, setBannerBusy] = useState(false)
   const [bannerUrl, setBannerUrl] = useState<string | null>(null)
@@ -106,9 +109,9 @@ export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }
         <div className="grid gap-3 py-1">
           <ImageUploadField
             label="Foto del partido"
-            hint="Banner o foto destacada de este encuentro."
+            hint="Opcional · se ve compacta en el panel."
             currentUrl={bannerUrl}
-            aspect="banner"
+            aspect="square"
             busy={bannerBusy}
             onUpload={async (file) => {
               if (!match) return
@@ -141,7 +144,7 @@ export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }
           />
 
           <div className="grid grid-cols-2 gap-3">
-                <Field label={`Goles ${match.homeTeam?.shortName ?? match.homeTeam?.name ?? match.homePlaceholder ?? 'Local'}`}>
+                <Field label={labels.scoreField(match.homeTeam?.shortName ?? match.homeTeam?.name ?? match.homePlaceholder ?? 'Local')}>
                   <Input
                     type="number"
                     min={0}
@@ -149,7 +152,7 @@ export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }
                     onChange={(e) => setForm((f) => ({ ...f, homeScore: e.target.value }))}
                   />
                 </Field>
-                <Field label={`Goles ${match.awayTeam?.shortName ?? match.awayTeam?.name ?? match.awayPlaceholder ?? 'Visitante'}`}>
+                <Field label={labels.scoreField(match.awayTeam?.shortName ?? match.awayTeam?.name ?? match.awayPlaceholder ?? 'Visitante')}>
                   <Input
                     type="number"
                     min={0}
@@ -237,6 +240,7 @@ export function MatchManageDialog({ match, venues, open, onOpenChange, onSaved }
 
       <PlanillaDialog
         match={match}
+        sport={sport}
         open={planillaOpen}
         onOpenChange={setPlanillaOpen}
         onSaved={async () => {

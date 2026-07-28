@@ -30,19 +30,24 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDateTime, getErrorMessage } from '@/lib/utils'
-import type { GameMatch, Player } from '@/types/domain'
+import { sportLabels } from '@/lib/sport-labels'
+import type { GameMatch, Player, Sport } from '@/types/domain'
 
-const eventLabels: Record<MatchEventRow['type'], string> = {
-  goal: 'Gol',
-  ownGoal: 'Autogol',
-  yellowCard: 'Amarilla',
-  redCard: 'Roja',
-  secondYellow: '2ª amarilla',
-  substitution: 'Cambio',
+function eventLabelsFor(sport?: Pick<Sport, 'code' | 'scoringLabel'> | null): Record<MatchEventRow['type'], string> {
+  const labels = sportLabels(sport)
+  return {
+    goal: labels.scoreEvent,
+    ownGoal: labels.ownScoreEvent,
+    yellowCard: 'Amarilla',
+    redCard: 'Roja',
+    secondYellow: '2ª amarilla',
+    substitution: 'Cambio',
+  }
 }
 
 type Props = {
   match: GameMatch | null
+  sport?: Pick<Sport, 'code' | 'scoringLabel'> | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => Promise<void> | void
@@ -50,7 +55,8 @@ type Props = {
 
 type LineupRow = { playerId: number; jerseyNumber: string; isStarter: boolean; selected: boolean }
 
-export function PlanillaDialog({ match, open, onOpenChange, onSaved }: Props) {
+export function PlanillaDialog({ match, sport, open, onOpenChange, onSaved }: Props) {
+  const eventLabels = useMemo(() => eventLabelsFor(sport), [sport])
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [sheets, setSheets] = useState<MatchSheet[]>([])

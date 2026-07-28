@@ -35,6 +35,7 @@ import { MatchManageDialog } from '@/features/tournaments/MatchManageDialog'
 import { BracketView } from '@/features/tournaments/BracketView'
 import { TournamentGalleryPanel } from '@/features/tournaments/TournamentGalleryPanel'
 import { formatDate, formatDateTime, formatLabels, getErrorMessage, statusLabels } from '@/lib/utils'
+import { sportLabels } from '@/lib/sport-labels'
 import type { GameMatch, Player, Sport, Team, Tournament, TournamentGroup, Venue } from '@/types/domain'
 
 export function TournamentListPage() {
@@ -826,6 +827,7 @@ export function TournamentDetailPage() {
   }
 
   const summary = overview?.summary
+  const labels = sportLabels(tournament.sport)
 
   return (
     <div>
@@ -916,11 +918,11 @@ export function TournamentDetailPage() {
               <CardContent className="space-y-2 p-3">
                 <p className="flex items-center gap-1.5 text-sm font-medium">
                   <Trophy className="size-3.5 text-primary" />
-                  Top goleadores
+                  {labels.scorersTitle}
                 </p>
                 {(overview?.scorers?.length ?? 0) === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Todavía no hay goles cargados en planillas.
+                    {labels.scorersEmpty}
                   </p>
                 ) : (
                   <ul className="divide-y">
@@ -998,9 +1000,9 @@ export function TournamentDetailPage() {
                           <TableHead>PG</TableHead>
                           <TableHead>PE</TableHead>
                           <TableHead>PP</TableHead>
-                          <TableHead>GF</TableHead>
-                          <TableHead>GC</TableHead>
-                          <TableHead>DG</TableHead>
+                          <TableHead title={labels.forLong}>{labels.forShort}</TableHead>
+                          <TableHead title={labels.againstLong}>{labels.againstShort}</TableHead>
+                          <TableHead title={labels.diffLong}>{labels.diffShort}</TableHead>
                           <TableHead>Pts</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1047,9 +1049,9 @@ export function TournamentDetailPage() {
                     <TableHead>PG</TableHead>
                     <TableHead>PE</TableHead>
                     <TableHead>PP</TableHead>
-                    <TableHead>GF</TableHead>
-                    <TableHead>GC</TableHead>
-                    <TableHead>DG</TableHead>
+                    <TableHead title={labels.forLong}>{labels.forShort}</TableHead>
+                    <TableHead title={labels.againstLong}>{labels.againstShort}</TableHead>
+                    <TableHead title={labels.diffLong}>{labels.diffShort}</TableHead>
                     <TableHead>Pts</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1080,7 +1082,7 @@ export function TournamentDetailPage() {
           <div className="grid gap-3 lg:grid-cols-2">
             <Card>
               <CardContent className="p-3">
-                <p className="mb-2 text-sm font-medium">Goleadores</p>
+                <p className="mb-2 text-sm font-medium">{labels.scorersTitle}</p>
                 {(overview?.scorers?.length ?? 0) === 0 ? (
                   <p className="text-sm text-muted-foreground">Sin datos aún.</p>
                 ) : (
@@ -1088,7 +1090,7 @@ export function TournamentDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Jugador</TableHead>
-                        <TableHead>Goles</TableHead>
+                        <TableHead>{labels.scorersColumn}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1630,6 +1632,7 @@ export function TournamentDetailPage() {
       <MatchManageDialog
         match={managingMatch}
         venues={venues}
+        sport={tournament.sport}
         open={managingMatch != null}
         onOpenChange={(open) => {
           if (!open) setManagingMatch(null)
