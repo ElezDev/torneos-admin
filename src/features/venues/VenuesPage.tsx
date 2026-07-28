@@ -10,13 +10,7 @@ import { Field, PageHeader } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SearchableSelect } from '@/components/SearchableSelect'
 import { COLOMBIA_DEPARTMENTS, citiesForDepartment } from '@/data/colombia-locations'
 import { getErrorMessage } from '@/lib/utils'
 import type { Venue } from '@/types/domain'
@@ -45,6 +39,16 @@ export function VenuesPage() {
   const [form, setForm] = useState<VenueForm>(emptyForm)
 
   const cities = useMemo(() => citiesForDepartment(form.department), [form.department])
+
+  const departmentOptions = useMemo(
+    () => COLOMBIA_DEPARTMENTS.map((dept) => ({ value: dept.name, label: dept.name })),
+    [],
+  )
+
+  const cityOptions = useMemo(
+    () => cities.map((city) => ({ value: city, label: city })),
+    [cities],
+  )
 
   async function load() {
     const res = await organizerApi.venues.list()
@@ -240,7 +244,7 @@ export function VenuesPage() {
         </Field>
 
         <Field label="Departamento">
-          <Select
+          <SearchableSelect
             value={form.department || undefined}
             onValueChange={(value) =>
               setForm((f) => ({
@@ -249,39 +253,21 @@ export function VenuesPage() {
                 city: '',
               }))
             }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleccionar departamento" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {COLOMBIA_DEPARTMENTS.map((dept) => (
-                <SelectItem key={dept.id} value={dept.name}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={departmentOptions}
+            placeholder="Seleccionar departamento"
+            searchPlaceholder="Buscar departamento…"
+          />
         </Field>
 
         <Field label="Ciudad / municipio">
-          <Select
+          <SearchableSelect
             value={form.city || undefined}
             onValueChange={(value) => setForm((f) => ({ ...f, city: value }))}
+            options={cityOptions}
+            placeholder={form.department ? 'Seleccionar ciudad' : 'Primero elegí departamento'}
+            searchPlaceholder="Buscar ciudad…"
             disabled={!form.department}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue
-                placeholder={form.department ? 'Seleccionar ciudad' : 'Primero elegí departamento'}
-              />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {cities.map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
         </Field>
 
         <Field label="Dirección">
