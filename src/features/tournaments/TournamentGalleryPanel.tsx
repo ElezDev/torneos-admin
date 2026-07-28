@@ -124,7 +124,7 @@ export function TournamentGalleryPanel({ tournament, matches, onTournamentChange
         <CardContent>
           <ImageUploadField
             label="Imagen principal"
-            hint="Se muestra en el resumen y cabecera del torneo."
+            hint="Opcional. Podés usarlo en galería o en la vista pública; no se muestra a pantalla completa en el panel."
             currentUrl={tournament.bannerUrl}
             aspect="banner"
             busy={bannerBusy}

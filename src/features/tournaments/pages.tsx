@@ -857,16 +857,6 @@ export function TournamentDetailPage() {
         }
       />
 
-      {tournament.bannerUrl ? (
-        <div className="mb-4 overflow-hidden rounded-xl border">
-          <img
-            src={tournament.bannerUrl}
-            alt={`Banner ${tournament.name}`}
-            className="aspect-[21/9] w-full object-cover"
-          />
-        </div>
-      ) : null}
-
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Resumen</TabsTrigger>

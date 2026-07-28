@@ -71,7 +71,7 @@ export function ImageUploadField({
       <div
         className={cn(
           'relative overflow-hidden rounded-lg border bg-muted/30',
-          aspect === 'banner' && 'aspect-[21/9]',
+          aspect === 'banner' && 'aspect-[21/9] max-h-36 max-w-xl',
           aspect === 'square' && 'aspect-square max-w-[140px]',
           aspect === 'portrait' && 'aspect-[3/4] max-h-[280px]',
         )}
