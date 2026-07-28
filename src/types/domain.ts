@@ -81,6 +81,7 @@ export type Venue = {
   tenantId: number
   name: string
   address: string | null
+  department: string | null
   city: string | null
 }
 

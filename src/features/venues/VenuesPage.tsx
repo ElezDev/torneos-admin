@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
-import { Plus } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApiError, organizerApi } from '@/api'
 import { useAuth } from '@/auth/AuthProvider'
@@ -10,8 +10,30 @@ import { Field, PageHeader } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { COLOMBIA_DEPARTMENTS, citiesForDepartment } from '@/data/colombia-locations'
 import { getErrorMessage } from '@/lib/utils'
 import type { Venue } from '@/types/domain'
+
+type VenueForm = {
+  name: string
+  department: string
+  city: string
+  address: string
+}
+
+const emptyForm = (): VenueForm => ({
+  name: '',
+  department: '',
+  city: '',
+  address: '',
+})
 
 export function VenuesPage() {
   const { tenant } = useAuth()
@@ -19,7 +41,10 @@ export function VenuesPage() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [form, setForm] = useState({ name: '', city: '', address: '' })
+  const [editing, setEditing] = useState<Venue | null>(null)
+  const [form, setForm] = useState<VenueForm>(emptyForm)
+
+  const cities = useMemo(() => citiesForDepartment(form.department), [form.department])
 
   async function load() {
     const res = await organizerApi.venues.list()
@@ -46,17 +71,49 @@ export function VenuesPage() {
     }
   }, [tenant?.id])
 
-  async function onCreate() {
+  function openCreate() {
+    setEditing(null)
+    setForm(emptyForm())
+    setOpen(true)
+  }
+
+  function openEdit(venue: Venue) {
+    setEditing(venue)
+    setForm({
+      name: venue.name,
+      department: venue.department ?? '',
+      city: venue.city ?? '',
+      address: venue.address ?? '',
+    })
+    setOpen(true)
+  }
+
+  async function onSubmit() {
+    if (!form.name.trim()) {
+      toast.error('El nombre de la sede es obligatorio.')
+      return
+    }
+
     setBusy(true)
     try {
-      await organizerApi.venues.create({
-        name: form.name,
+      const payload = {
+        name: form.name.trim(),
+        department: form.department || null,
         city: form.city || null,
-        address: form.address || null,
-      })
-      toast.success('Sede creada')
+        address: form.address.trim() || null,
+      }
+
+      if (editing) {
+        await organizerApi.venues.update(editing.id, payload)
+        toast.success('Sede actualizada')
+      } else {
+        await organizerApi.venues.create(payload)
+        toast.success('Sede creada')
+      }
+
       setOpen(false)
-      setForm({ name: '', city: '', address: '' })
+      setEditing(null)
+      setForm(emptyForm())
       await load()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
@@ -65,9 +122,25 @@ export function VenuesPage() {
     }
   }
 
+  async function onDelete(venue: Venue) {
+    if (!confirm(`¿Eliminar la sede “${venue.name}”?`)) return
+    try {
+      await organizerApi.venues.remove(venue.id)
+      toast.success('Sede eliminada')
+      await load()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : getErrorMessage(err))
+    }
+  }
+
   const columns = useMemo<ColumnDef<Venue>[]>(
     () => [
       { accessorKey: 'name', header: 'Sede' },
+      {
+        accessorKey: 'department',
+        header: 'Departamento',
+        cell: ({ row }) => row.original.department ?? '—',
+      },
       {
         accessorKey: 'city',
         header: 'Ciudad',
@@ -78,6 +151,33 @@ export function VenuesPage() {
         header: 'Dirección',
         cell: ({ row }) => row.original.address ?? '—',
       },
+      {
+        id: 'actions',
+        header: '',
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => openEdit(row.original)}
+              title="Editar"
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => void onDelete(row.original)}
+              title="Eliminar"
+            >
+              <Trash2 className="size-3.5 text-destructive" />
+            </Button>
+          </div>
+        ),
+      },
     ],
     [],
   )
@@ -86,15 +186,9 @@ export function VenuesPage() {
     <div>
       <PageHeader
         title="Sedes"
-        description="Canchas y complejos del inquilino activo."
+        description="Canchas y complejos en cualquier departamento de Colombia."
         actions={
-          <Button
-            size="sm"
-            onClick={() => {
-              setForm({ name: '', city: '', address: '' })
-              setOpen(true)
-            }}
-          >
+          <Button size="sm" onClick={openCreate}>
             <Plus className="size-4" />
             Nueva sede
           </Button>
@@ -108,11 +202,11 @@ export function VenuesPage() {
           <DataTable
             columns={columns}
             data={venues}
-            searchPlaceholder="Buscar sede o ciudad…"
-            searchKeys={['name', 'city', 'address']}
+            searchPlaceholder="Buscar sede, ciudad o departamento…"
+            searchKeys={['name', 'city', 'department', 'address']}
             emptyMessage="Sin sedes todavía."
             toolbar={
-              <Button size="sm" onClick={() => setOpen(true)}>
+              <Button size="sm" onClick={openCreate}>
                 <Plus className="size-4" />
                 Nueva
               </Button>
@@ -123,26 +217,78 @@ export function VenuesPage() {
 
       <FormDialog
         open={open}
-        onOpenChange={setOpen}
-        title="Nueva sede"
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) {
+            setEditing(null)
+            setForm(emptyForm())
+          }
+        }}
+        title={editing ? 'Editar sede' : 'Nueva sede'}
+        description="Elegí departamento y ciudad para ubicar la sede a nivel nacional."
         submitting={busy}
-        submitLabel="Crear"
-        onSubmit={onCreate}
+        submitLabel={editing ? 'Guardar' : 'Crear'}
+        onSubmit={onSubmit}
       >
         <Field label="Nombre">
           <Input
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder="Estadio, coliseo, cancha…"
             required
           />
         </Field>
-        <Field label="Ciudad">
-          <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+
+        <Field label="Departamento">
+          <Select
+            value={form.department || undefined}
+            onValueChange={(value) =>
+              setForm((f) => ({
+                ...f,
+                department: value,
+                city: '',
+              }))
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleccionar departamento" />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              {COLOMBIA_DEPARTMENTS.map((dept) => (
+                <SelectItem key={dept.id} value={dept.name}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
+
+        <Field label="Ciudad / municipio">
+          <Select
+            value={form.city || undefined}
+            onValueChange={(value) => setForm((f) => ({ ...f, city: value }))}
+            disabled={!form.department}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue
+                placeholder={form.department ? 'Seleccionar ciudad' : 'Primero elegí departamento'}
+              />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              {cities.map((city) => (
+                <SelectItem key={city} value={city}>
+                  {city}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
         <Field label="Dirección">
           <Input
             value={form.address}
             onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+            placeholder="Calle, barrio, referencia…"
           />
         </Field>
       </FormDialog>
