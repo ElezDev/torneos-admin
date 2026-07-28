@@ -62,7 +62,7 @@ export function TournamentListPage() {
     ;(async () => {
       if (!tenant?.id) {
         setLoading(false)
-        setLoadError('Elegí un inquilino arriba a la izquierda para ver tus torneos.')
+        setLoadError('Elige un inquilino arriba a la izquierda para ver tus torneos.')
         setTournaments([])
         return
       }
@@ -228,7 +228,7 @@ export function TournamentListPage() {
             data={tournaments}
             searchPlaceholder="Buscar torneo…"
             searchKeys={['name', 'seasonLabel']}
-            emptyMessage="Sin torneos. Creá uno para empezar."
+            emptyMessage="Sin torneos. Crea uno para empezar."
             onRowClick={(tournament) => navigate(`/app/tournaments/${tournament.id}`)}
             filters={[
               {
@@ -265,7 +265,7 @@ export function TournamentListPage() {
         open={open}
         onOpenChange={setOpen}
         title="Nuevo torneo"
-        description="Podés elegir Futsal y después generar el fixture con un clic."
+        description="Puedes elegir Futsal y después generar el fixture con un clic."
         submitting={busy}
         submitLabel="Crear y abrir"
         onSubmit={onCreate}
@@ -842,7 +842,7 @@ export function TournamentDetailPage() {
           size="sm"
           onClick={() => setFixtureOpen(true)}
           disabled={teams.length < 2}
-          title={teams.length < 2 ? 'Necesitás al menos 2 equipos' : undefined}
+          title={teams.length < 2 ? 'Necesitas al menos 2 equipos' : undefined}
         >
           <Sparkles className="size-4" />
           Generar fixture
@@ -888,7 +888,7 @@ export function TournamentDetailPage() {
                 <p className="text-sm font-medium">Próximos partidos</p>
                 {(overview?.upcomingMatches?.length ?? 0) === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Sin partidos. Generá el fixture automático.
+                    Sin partidos. Genera el fixture automático.
                   </p>
                 ) : (
                   <ul className="divide-y">
@@ -1148,7 +1148,7 @@ export function TournamentDetailPage() {
               data={groups}
               searchPlaceholder="Buscar grupo…"
               searchKeys={['name']}
-              emptyMessage="Sin grupos. Creá Grupo A, B… y asigná equipos."
+              emptyMessage="Sin grupos. Crea Grupo A, B… y asigna equipos."
               toolbar={
                 <Button size="sm" onClick={() => setGroupOpen(true)}>
                   <Plus className="size-4" />
@@ -1166,7 +1166,7 @@ export function TournamentDetailPage() {
               data={teams}
               searchPlaceholder="Buscar equipo…"
               searchKeys={['name', 'shortName']}
-              emptyMessage="Sin equipos. Agregá planteles para armar el fixture."
+              emptyMessage="Sin equipos. Agrega planteles para armar el fixture."
               onRowClick={(team) => setSelectedTeam(team.id)}
               filters={
                 groups.length
@@ -1240,7 +1240,7 @@ export function TournamentDetailPage() {
               data={matches}
               searchPlaceholder="Buscar partido o sede…"
               searchKeys={['roundName']}
-              emptyMessage="Sin partidos. Generá el fixture automático."
+              emptyMessage="Sin partidos. Genera el fixture automático."
               filters={[
                 {
                   id: 'status',
@@ -1339,7 +1339,7 @@ export function TournamentDetailPage() {
             onValueChange={(value) => setSelectedTeam(Number(value))}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Elegí equipo" />
+              <SelectValue placeholder="Elige equipo" />
             </SelectTrigger>
             <SelectContent>
               {teams.map((team) => (
@@ -1454,7 +1454,7 @@ export function TournamentDetailPage() {
               {fixtureMode === 'knockout' || tournament.format === 'knockout'
                 ? 'Bracket de eliminación: 1ª ronda aleatoria y luego Ganador partido X vs Ganador partido Y.'
                 : tournament.format === 'groups'
-                  ? 'Primero creá los equipos. Al generar, se reparte en grupos y solo se emparejan equipos del mismo grupo.'
+                  ? 'Primero crea los equipos. Al generar, se reparte en grupos y solo se emparejan equipos del mismo grupo.'
                   : 'Round-robin con fecha, hora, intervalo entre partidos del mismo día y rotación de sedes.'}
             </DialogDescription>
           </DialogHeader>
@@ -1528,7 +1528,7 @@ export function TournamentDetailPage() {
               {fixtureMode === 'knockout' || tournament.format === 'knockout' ? (
                 <div className="space-y-2 rounded-md border bg-muted/30 p-3">
                   <p className="text-[11px] text-muted-foreground">
-                    Necesitás 4, 8 o 16 equipos. La 1ª ronda se sortea; las siguientes quedan como
+                    Necesitas 4, 8 o 16 equipos. La 1ª ronda se sortea; las siguientes quedan como
                     “Ganador partido 1 vs Ganador partido 2”, etc.
                   </p>
                   <label className="flex items-center gap-2 text-sm">
@@ -1563,7 +1563,7 @@ export function TournamentDetailPage() {
                     />
                   </Field>
                   <p className="text-[11px] text-muted-foreground">
-                    Creá primero los equipos. Acá se reparten en grupos y solo se emparejan rivales del mismo grupo.
+                    Crea primero los equipos. Acá se reparten en grupos y solo se emparejan rivales del mismo grupo.
                   </p>
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
@@ -1589,7 +1589,7 @@ export function TournamentDetailPage() {
               <Field label="Sedes (rotan en cada partido)">
                 <div className="max-h-36 space-y-2 overflow-auto rounded-md border p-2">
                   {venues.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No hay sedes. Creá alguna en Sedes.</p>
+                    <p className="text-xs text-muted-foreground">No hay sedes. Crea alguna en Sedes.</p>
                   ) : (
                     venues.map((venue) => (
                       <label key={venue.id} className="flex items-center gap-2 text-sm">

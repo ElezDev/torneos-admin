@@ -66,7 +66,7 @@ export function BracketView({ rounds, onManage }: Props) {
   if (!rounds.length) {
     return (
       <p className="p-4 text-sm text-muted-foreground">
-        Todavía no hay bracket. Generá el fixture de eliminación (4, 8 o 16 equipos).
+        Todavía no hay bracket. Genera el fixture de eliminación (4, 8 o 16 equipos).
       </p>
     )
   }

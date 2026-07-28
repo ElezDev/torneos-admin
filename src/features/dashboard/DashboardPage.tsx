@@ -79,7 +79,7 @@ export function DashboardPage() {
           ) : tournaments.length === 0 ? (
             <EmptyState
               title="Sin torneos"
-              description="Creá el primero desde Torneos."
+              description="Crea el primero desde Torneos."
               action={
                 <Button size="sm" asChild>
                   <Link to="/app/tournaments">Ir a torneos</Link>

@@ -66,7 +66,7 @@ export function MatchManageDialog({ match, venues, sport, open, onOpenChange, on
   async function save(finish = false) {
     if (!match) return
     if (finish && (form.homeScore === '' || form.awayScore === '')) {
-      toast.error('Cargá el marcador para finalizar')
+      toast.error('Carga el marcador para finalizar')
       return
     }
 

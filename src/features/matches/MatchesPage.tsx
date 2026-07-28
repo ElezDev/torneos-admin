@@ -168,7 +168,7 @@ export function MatchesPage() {
               size="sm"
               disabled={!canCreate}
               onClick={() => setOpen(true)}
-              title={!canCreate ? 'Necesitás al menos 2 equipos' : undefined}
+              title={!canCreate ? 'Necesitas al menos 2 equipos' : undefined}
             >
               <Plus className="size-4" />
               Nuevo
@@ -188,8 +188,8 @@ export function MatchesPage() {
             searchKeys={['encuentro', 'sede', 'matchday', 'status']}
             emptyMessage={
               canCreate
-                ? 'Sin partidos. Programá el primero con Nuevo.'
-                : 'Agregá al menos 2 equipos al torneo para poder crear partidos.'
+                ? 'Sin partidos. Programa el primero con Nuevo.'
+                : 'Agrega al menos 2 equipos al torneo para poder crear partidos.'
             }
             initialPageSize={10}
           />

@@ -93,7 +93,7 @@ export function AdminTenantsPage() {
 
   function openOrganizerPanel(tenant: Tenant) {
     if (!tenant.isActive) {
-      toast.error('Activá la organización antes de gestionarla')
+      toast.error('Activa la organización antes de gestionarla')
       return
     }
     enterOrganizerPortal(tenant)

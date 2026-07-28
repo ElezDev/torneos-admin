@@ -38,7 +38,7 @@ export function AdminLoginPage() {
       brand="Matchday"
       brandHint="Plataforma"
       headline="Panel de control"
-      support="Administrá organizaciones, accesos y el estado global del sistema."
+      support="Administra organizaciones, accesos y el estado global del sistema."
     >
       <form className="space-y-5" onSubmit={onSubmit}>
         <div>
@@ -115,13 +115,13 @@ export function LoginPage() {
       brand="Matchday"
       brandHint="Ligas y clubes"
       headline="Tu torneo, en orden"
-      support="Entrá para gestionar fixture, planillas, tabla y resultados de tu organización."
+      support="Entra para gestionar fixture, planillas, tabla y resultados de tu organización."
     >
       <form className="space-y-5" onSubmit={onSubmit}>
         <div>
           <p className="auth-brand text-3xl leading-none text-[#10231b]">Iniciar sesión</p>
           <p className="mt-2 text-sm text-[#5d7368]">
-            Usá el email y contraseña de tu organización.
+            Usa el email y contraseña de tu organización.
           </p>
         </div>
         <div className="grid gap-2">

@@ -79,7 +79,7 @@ export function TournamentGalleryPanel({ tournament, matches, onTournamentChange
 
   async function publishPost() {
     if (!form.caption.trim() && !form.image) {
-      toast.error('Agregá una foto o un comentario')
+      toast.error('Agrega una foto o un comentario')
       return
     }
     setBusy(true)
@@ -124,7 +124,7 @@ export function TournamentGalleryPanel({ tournament, matches, onTournamentChange
         <CardContent>
           <ImageUploadField
             label="Imagen principal"
-            hint="Opcional. Podés usarlo en galería o en la vista pública; no se muestra a pantalla completa en el panel."
+            hint="Opcional. Puedes usarlo en galería o en la vista pública; no se muestra a pantalla completa en el panel."
             currentUrl={tournament.bannerUrl}
             aspect="banner"
             busy={bannerBusy}

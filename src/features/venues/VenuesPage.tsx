@@ -236,7 +236,7 @@ export function VenuesPage() {
           }
         }}
         title={editing ? 'Editar sede' : 'Nueva sede'}
-        description="Elegí departamento y ciudad para ubicar la sede a nivel nacional."
+        description="Elige departamento y ciudad para ubicar la sede a nivel nacional."
         submitting={busy}
         submitLabel={editing ? 'Guardar' : 'Crear'}
         onSubmit={onSubmit}
@@ -271,7 +271,7 @@ export function VenuesPage() {
             value={form.city || undefined}
             onValueChange={(value) => setForm((f) => ({ ...f, city: value }))}
             options={cityOptions}
-            placeholder={form.department ? 'Seleccionar ciudad' : 'Primero elegí departamento'}
+            placeholder={form.department ? 'Seleccionar ciudad' : 'Primero elige departamento'}
             searchPlaceholder="Buscar ciudad…"
             disabled={!form.department}
           />
@@ -294,7 +294,7 @@ export function VenuesPage() {
         title="Eliminar sede"
         description={
           deleting
-            ? `¿Seguro que querés eliminar “${deleting.name}”? Esta acción no se puede deshacer.`
+            ? `¿Seguro que quieres eliminar “${deleting.name}”? Esta acción no se puede deshacer.`
             : ''
         }
         confirmLabel="Eliminar"

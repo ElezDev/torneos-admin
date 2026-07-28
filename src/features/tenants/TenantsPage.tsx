@@ -187,7 +187,7 @@ export function TenantsPage() {
           <div className="space-y-4">
             <ImageUploadField
               label="Logo"
-              hint="Se muestra en el panel cuando operás con esta organización."
+              hint="Se muestra en el panel cuando operas con esta organización."
               currentUrl={branding.logoUrl}
               aspect="square"
               busy={brandingBusy === 'logo'}

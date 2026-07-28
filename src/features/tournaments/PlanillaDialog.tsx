@@ -161,7 +161,7 @@ export function PlanillaDialog({ match, sport, open, onOpenChange, onSaved }: Pr
     if (!match) return
     const rows = (lineups[teamId] ?? []).filter((r) => r.selected)
     if (rows.length === 0) {
-      toast.error('Seleccioná al menos un jugador')
+      toast.error('Selecciona al menos un jugador')
       return
     }
     setBusy(true)
@@ -187,7 +187,7 @@ export function PlanillaDialog({ match, sport, open, onOpenChange, onSaved }: Pr
   async function addEvent() {
     if (!match || !eventForm.teamId || !eventForm.playerId) return
     if (eventForm.type === 'substitution' && !eventForm.relatedPlayerId) {
-      toast.error('Indicá quién entra en el cambio')
+      toast.error('Indica quién entra en el cambio')
       return
     }
     setBusy(true)

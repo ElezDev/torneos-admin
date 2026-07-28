@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       const res = await authApi.login({ email, password })
       if (isSuperAdminUser(res.user) && (res.user.tenants?.length ?? 0) === 0) {
-        throw new Error('Esta cuenta es de plataforma. Usá /admin/login.')
+        throw new Error('Esta cuenta es de plataforma. Usa /admin/login.')
       }
       setToken(res.token)
       applySession(res.user, 'organizer', res.user.tenants?.[0] ?? null)
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       const res = await authApi.login({ email, password })
       if (!isSuperAdminUser(res.user)) {
-        throw new Error('No tenés acceso al panel de plataforma.')
+        throw new Error('No tienes acceso al panel de plataforma.')
       }
       setToken(res.token)
       applySession(res.user, 'admin', null)
